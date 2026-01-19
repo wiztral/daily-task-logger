@@ -54,13 +54,13 @@ func (m Model) handleNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.Tasks, _ = m.Store.LoadTasks(m.CurrentDate)
 		m.Cursor = 0
 
-	case "a":
+	case "o":
 		m.Mode = ModeAddTask
 		m.TextInput.Placeholder = ""
 		m.TextInput.SetValue("")
 		return m, textinput.Blink
 
-	case "e":
+	case "i":
 		if len(m.Tasks) > 0 {
 			m.Mode = ModeEditTask
 			m.TextInput.SetValue(m.Tasks[m.Cursor].Description)
@@ -75,19 +75,27 @@ func (m Model) handleNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, textinput.Blink
 		}
 
-	case "d":
+	case "enter":
 		if len(m.Tasks) > 0 {
 			m.Tasks[m.Cursor].Done = !m.Tasks[m.Cursor].Done
 			m.Store.SaveTasks(m.CurrentDate, m.Tasks)
 		}
 
-	case "x":
+	case "d":
 		if len(m.Tasks) > 0 {
 			m.Tasks = append(m.Tasks[:m.Cursor], m.Tasks[m.Cursor+1:]...)
 			if m.Cursor >= len(m.Tasks) && m.Cursor > 0 {
 				m.Cursor--
 			}
 			m.Store.SaveTasks(m.CurrentDate, m.Tasks)
+		}
+
+	case "g":
+		m.Cursor = 0
+
+	case "G":
+		if len(m.Tasks) > 0 {
+			m.Cursor = len(m.Tasks) - 1
 		}
 
 	case "y":

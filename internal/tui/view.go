@@ -53,7 +53,7 @@ func (m Model) View() string {
 }
 
 func (m Model) getHelpText() string {
-	return "j/k: move • a: add • e: edit • d: toggle • x: delete • t: time • y: rollover • h/l: prev/next • q: quit"
+	return "j/k: move • o: add • i: edit • d: delete • t: time • enter: toggle • y: rollover • h/l: day • g/G: top/bot • q: quit"
 }
 
 func (m Model) getInputPrompt() string {
