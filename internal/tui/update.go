@@ -89,6 +89,19 @@ func (m Model) handleNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			m.Store.SaveTasks(m.CurrentDate, m.Tasks)
 		}
+
+	case "y":
+		if len(m.Tasks) > 0 {
+			tomorrow := m.CurrentDate.AddDate(0, 0, 1)
+			tomorrowTasks, _ := m.Store.LoadTasks(tomorrow)
+
+			taskToCopy := m.Tasks[m.Cursor]
+			taskToCopy.Done = false
+			taskToCopy.TimeMinutes = 0
+
+			tomorrowTasks = append(tomorrowTasks, taskToCopy)
+			m.Store.SaveTasks(tomorrow, tomorrowTasks)
+		}
 	}
 	return m, nil
 }
