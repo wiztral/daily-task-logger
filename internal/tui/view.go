@@ -10,7 +10,8 @@ func (m Model) View() string {
 	var s strings.Builder
 
 	// Header
-	header := HeaderStyle.Render(fmt.Sprintf("%s | Total Time: %s",
+	header := HeaderStyle.Render(fmt.Sprintf("%s | %s | Total Time: %s",
+		strings.ToUpper(m.Workspace),
 		m.CurrentDate.Format("Monday, Jan 2, 2006"),
 		storage.FormatMinutes(m.GetTotalTime())))
 	s.WriteString(header + "\n")
@@ -53,7 +54,7 @@ func (m Model) View() string {
 }
 
 func (m Model) getHelpText() string {
-	return "j/k: move • o: add • i: edit • d: delete • t: time • enter: toggle • y: rollover • h/l: day • g/G: top/bot • q: quit"
+	return "w: workspace • [/]: cycle • j/k: move • o: add • i: edit • d: delete • t: time • enter: toggle • y: rollover • h/l: day • q: quit"
 }
 
 func (m Model) getInputPrompt() string {
@@ -64,6 +65,8 @@ func (m Model) getInputPrompt() string {
 		return "Edit Task:"
 	case ModeEditTime:
 		return "Edit Time (+15m or 1h):"
+	case ModeWorkspace:
+		return "Switch Workspace (type name):"
 	default:
 		return ""
 	}

@@ -14,6 +14,7 @@ const (
 	ModeAddTask
 	ModeEditTask
 	ModeEditTime
+	ModeWorkspace
 )
 
 type Model struct {
@@ -23,6 +24,7 @@ type Model struct {
 	Cursor      int
 	Mode        Mode
 	TextInput   textinput.Model
+	Workspace   string
 	Error       error
 	Width       int
 	Height      int
@@ -42,6 +44,7 @@ func NewModel(s *storage.Store) Model {
 		Tasks:       tasks,
 		Mode:        ModeNav,
 		TextInput:   ti,
+		Workspace:   s.CurrentWorkspace,
 	}
 }
 

@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type Store struct {
-	BaseDir string
+	BaseDir          string
+	CurrentWorkspace string
 }
 
 func NewStore() (*Store, error) {
@@ -23,12 +25,78 @@ func NewStore() (*Store, error) {
 			return nil, err
 		}
 	}
-	return &Store{BaseDir: baseDir}, nil
+
+	s := &Store{
+		BaseDir:          baseDir,
+		CurrentWorkspace: "default",
+	}
+
+	if last, err := os.ReadFile(filepath.Join(baseDir, ".last_workspace")); err == nil {
+		s.CurrentWorkspace = strings.TrimSpace(string(last))
+	}
+
+	if err := s.migrateToWorkspaces(); err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (s *Store) migrateToWorkspaces() error {
+	defaultDir := filepath.Join(s.BaseDir, "default")
+	if err := os.MkdirAll(defaultDir, 0755); err != nil {
+		return err
+	}
+
+	files, err := os.ReadDir(s.BaseDir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if !f.IsDir() && filepath.Ext(f.Name()) == ".md" {
+			oldPath := filepath.Join(s.BaseDir, f.Name())
+			newPath := filepath.Join(defaultDir, f.Name())
+			if err := os.Rename(oldPath, newPath); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (s *Store) GetFilePath(date time.Time) string {
+	workspaceDir := filepath.Join(s.BaseDir, s.CurrentWorkspace)
+	_ = os.MkdirAll(workspaceDir, 0755)
 	filename := date.Format("2006-01-02") + ".md"
-	return filepath.Join(s.BaseDir, filename)
+	return filepath.Join(workspaceDir, filename)
+}
+
+func (s *Store) ListWorkspaces() []string {
+	var workspaces []string
+	files, err := os.ReadDir(s.BaseDir)
+	if err != nil {
+		return []string{"default"}
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			workspaces = append(workspaces, f.Name())
+		}
+	}
+
+	if len(workspaces) == 0 {
+		return []string{"default"}
+	}
+	return workspaces
+}
+
+func (s *Store) SetWorkspace(name string) {
+	if name == "" {
+		return
+	}
+	s.CurrentWorkspace = name
+	_ = os.WriteFile(filepath.Join(s.BaseDir, ".last_workspace"), []byte(name), 0644)
 }
 
 func (s *Store) LoadTasks(date time.Time) ([]Task, error) {

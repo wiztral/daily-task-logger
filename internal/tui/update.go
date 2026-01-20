@@ -124,8 +124,44 @@ func (m Model) handleNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			tomorrowTasks = append(tomorrowTasks, taskToCopy)
 			m.Store.SaveTasks(tomorrow, tomorrowTasks)
 		}
+
+	case "w":
+		m.Mode = ModeWorkspace
+		m.TextInput.Placeholder = ""
+		m.TextInput.SetValue(m.Workspace)
+		return m, textinput.Blink
+
+	case "[":
+		workspaces := m.Store.ListWorkspaces()
+		for i, w := range workspaces {
+			if w == m.Workspace {
+				newIdx := (i - 1 + len(workspaces)) % len(workspaces)
+				m.switchWorkspace(workspaces[newIdx])
+				break
+			}
+		}
+
+	case "]":
+		workspaces := m.Store.ListWorkspaces()
+		for i, w := range workspaces {
+			if w == m.Workspace {
+				newIdx := (i + 1) % len(workspaces)
+				m.switchWorkspace(workspaces[newIdx])
+				break
+			}
+		}
 	}
 	return m, nil
+}
+
+func (m *Model) switchWorkspace(name string) {
+	if name == "" {
+		return
+	}
+	m.Workspace = name
+	m.Store.SetWorkspace(name)
+	m.Tasks, _ = m.Store.LoadTasks(m.CurrentDate)
+	m.Cursor = 0
 }
 
 func (m Model) handleInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -154,6 +190,8 @@ func (m Model) handleInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.Tasks[m.Cursor].Description = val
 		case ModeEditTime:
 			m.applyTimeBuffer(val)
+		case ModeWorkspace:
+			m.switchWorkspace(val)
 		}
 
 		m.Store.SaveTasks(m.CurrentDate, m.Tasks)
