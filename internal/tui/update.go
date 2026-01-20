@@ -39,9 +39,23 @@ func (m Model) handleNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.Cursor++
 		}
 
+	case "J", "shift+down":
+		if m.Cursor < len(m.Tasks)-1 {
+			m.Tasks[m.Cursor], m.Tasks[m.Cursor+1] = m.Tasks[m.Cursor+1], m.Tasks[m.Cursor]
+			m.Cursor++
+			m.Store.SaveTasks(m.CurrentDate, m.Tasks)
+		}
+
 	case "k", "up":
 		if m.Cursor > 0 {
 			m.Cursor--
+		}
+
+	case "K", "shift+up":
+		if m.Cursor > 0 {
+			m.Tasks[m.Cursor], m.Tasks[m.Cursor-1] = m.Tasks[m.Cursor-1], m.Tasks[m.Cursor]
+			m.Cursor--
+			m.Store.SaveTasks(m.CurrentDate, m.Tasks)
 		}
 
 	case "h", "left":

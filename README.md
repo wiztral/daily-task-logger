@@ -16,6 +16,8 @@ A minimalist, Go-based Terminal User Interface (TUI) for daily task logging and 
 | --- | --- |
 | `j` / `↓` | Move cursor down |
 | `k` / `↑` | Move cursor up |
+| `J` / `Shift+↓` | Move task down |
+| `K` / `Shift+↑` | Move task up |
 | `h` / `←` | Navigate to previous day |
 | `l` / `→` | Navigate to next day |
 | `o` | Add a new task (Vim "open") |
