@@ -10,6 +10,7 @@ A minimalist, Go-based Terminal User Interface (TUI) for daily task logging and 
 - **Vim-like Ergonomics**: Navigation and actions designed for Vim users.
 - **Flexible Time Tracking**: Log time per task with support for absolute (`1h 20m`), additive (`+15m`), or subtractive (`-10min`) inputs.
 - **Task Rollover**: Copy unfinished tasks to the next day with a single keystroke (`y`).
+- **External Task Links**: Manage, fuzzy-search, and attach external links (like Notion docs or Jira tickets) directly to your tasks, complete with browser integration.
 
 ## ⌨️ Shortcuts
 
@@ -29,9 +30,15 @@ A minimalist, Go-based Terminal User Interface (TUI) for daily task logging and 
 | `Enter` | Toggle task completion status |
 | `y` | Rollover task (yank to next day) |
 | `t` | Edit logged time |
+| `a` | Add a new external link to workspace store |
+| `s` | Fuzzy search links and attach to selected task |
+| `S` | Fuzzy search links and create new task from link |
+| `v` | Open attached link of selected task in browser |
 | `g` | Jump to top of list |
 | `G` | Jump to bottom of list |
 | `q` | Quit application |
+
+*(When fuzzy-searching links, you can use `Ctrl+P` and `Ctrl+N` to navigate up and down without exiting the filter input).*
 
 ## 🛠️ Build & Installation
 
@@ -57,4 +64,6 @@ All data is stored in the user's home directory under workspace subdirectories:
 - **Windows**: `%USERPROFILE%\.daily_task_logger\<workspace>\`
 - **Linux/macOS**: `~/.daily_task_logger/<workspace>/`
 
-Files are named by date (e.g., `2024-01-19.md`) and follow standard Markdown task list syntax. Existing unorganized tasks are automatically migrated to a `default` workspace on first run.
+Daily logs are named by date (e.g., `2024-01-19.md`) and follow standard Markdown task list syntax. Links attached to tasks are saved natively in the Markdown (e.g. `- [ ] [Task Title](URL)`). 
+
+External links for the workspace are saved in a standard `links.json` file inside the workspace directory. Existing unorganized tasks are automatically migrated to a `default` workspace on first run.
