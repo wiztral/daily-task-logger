@@ -7,6 +7,10 @@ import (
 )
 
 func (m Model) View() string {
+	if m.Mode == ModeSearchLinks {
+		return m.LinkList.View()
+	}
+
 	var s strings.Builder
 
 	// Header
@@ -36,7 +40,12 @@ func (m Model) View() string {
 				done = "[x]"
 			}
 
-			line := fmt.Sprintf("%s %s %s (Time: %s)", cursor, done, task.Description, storage.FormatMinutes(task.TimeMinutes))
+			desc := task.Description
+			if task.URL != "" {
+				desc = desc + " [↗]"
+			}
+
+			line := fmt.Sprintf("%s %s %s (Time: %s)", cursor, done, desc, storage.FormatMinutes(task.TimeMinutes))
 			s.WriteString(style.Render(line) + "\n")
 		}
 	}
@@ -44,7 +53,11 @@ func (m Model) View() string {
 	// Input Area
 	if m.Mode != ModeNav {
 		s.WriteString("\n" + InputPromptStyle.Render(m.getInputPrompt()) + "\n")
-		s.WriteString(m.TextInput.View() + "\n")
+		if m.Mode == ModeAddLinkTitle || m.Mode == ModeAddLinkURL {
+			s.WriteString(m.LinkInput.View() + "\n")
+		} else {
+			s.WriteString(m.TextInput.View() + "\n")
+		}
 	}
 
 	// Footer (Mode Status)
@@ -54,7 +67,7 @@ func (m Model) View() string {
 }
 
 func (m Model) getHelpText() string {
-	return "w: workspace • [/]: cycle • j/k: move • o: add • i: edit • d: delete • t: time • enter: toggle • y: rollover • h/l: day • q: quit"
+	return "w: ws • [/]: cycle • j/k: move • o: add • i: edit • d: del • t: time • a/s/S/v: links • enter: tgl • y: roll • h/l: day • q: quit"
 }
 
 func (m Model) getInputPrompt() string {
@@ -67,6 +80,10 @@ func (m Model) getInputPrompt() string {
 		return "Edit Time (+15m or 1h):"
 	case ModeWorkspace:
 		return "Switch Workspace (type name):"
+	case ModeAddLinkTitle:
+		return "Add Link Title:"
+	case ModeAddLinkURL:
+		return "Add Link URL:"
 	default:
 		return ""
 	}

@@ -9,27 +9,43 @@ import (
 type Task struct {
 	Done        bool
 	Description string
+	URL         string
 	TimeMinutes int
 }
 
 var taskRegex = regexp.MustCompile(`^- \[( |x)\] (.*?) \(Time: (.*?)\)`)
 var simpleRegex = regexp.MustCompile(`^- \[( |x)\] (.*)`)
+var linkRegex = regexp.MustCompile(`^\[(.*?)\]\((.*?)\)$`)
 
 func ParseLine(line string) *Task {
 	matches := taskRegex.FindStringSubmatch(line)
 	if len(matches) == 4 {
+		desc := matches[2]
+		url := ""
+		if linkMatches := linkRegex.FindStringSubmatch(desc); len(linkMatches) == 3 {
+			desc = linkMatches[1]
+			url = linkMatches[2]
+		}
 		return &Task{
 			Done:        matches[1] == "x",
-			Description: matches[2],
+			Description: desc,
+			URL:         url,
 			TimeMinutes: parseTime(matches[3]),
 		}
 	}
 
 	matches = simpleRegex.FindStringSubmatch(line)
 	if len(matches) == 3 {
+		desc := matches[2]
+		url := ""
+		if linkMatches := linkRegex.FindStringSubmatch(desc); len(linkMatches) == 3 {
+			desc = linkMatches[1]
+			url = linkMatches[2]
+		}
 		return &Task{
 			Done:        matches[1] == "x",
-			Description: matches[2],
+			Description: desc,
+			URL:         url,
 			TimeMinutes: 0,
 		}
 	}
@@ -62,7 +78,11 @@ func (t Task) String() string {
 	if t.Done {
 		doneStr = "x"
 	}
-	return fmt.Sprintf("- [%s] %s (Time: %s)", doneStr, t.Description, FormatMinutes(t.TimeMinutes))
+	desc := t.Description
+	if t.URL != "" {
+		desc = fmt.Sprintf("[%s](%s)", t.Description, t.URL)
+	}
+	return fmt.Sprintf("- [%s] %s (Time: %s)", doneStr, desc, FormatMinutes(t.TimeMinutes))
 }
 
 func FormatMinutes(m int) string {

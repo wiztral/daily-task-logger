@@ -65,9 +65,14 @@ func (s *Store) migrateToWorkspaces() error {
 	return nil
 }
 
-func (s *Store) GetFilePath(date time.Time) string {
+func (s *Store) GetWorkspaceDir() string {
 	workspaceDir := filepath.Join(s.BaseDir, s.CurrentWorkspace)
 	_ = os.MkdirAll(workspaceDir, 0755)
+	return workspaceDir
+}
+
+func (s *Store) GetFilePath(date time.Time) string {
+	workspaceDir := s.GetWorkspaceDir()
 	filename := date.Format("2006-01-02") + ".md"
 	return filepath.Join(workspaceDir, filename)
 }

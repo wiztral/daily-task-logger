@@ -2,9 +2,11 @@ package tui
 
 import (
 	"daily-task-logger/internal/storage"
+	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -14,16 +16,57 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if m.Mode == ModeNav {
-			return m.handleNav(msg)
-		}
-		return m.handleInput(msg)
+	var cmd tea.Cmd
 
+	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
+		m.LinkList.SetSize(msg.Width, msg.Height)
+	}
+
+	if m.Mode == ModeSearchLinks {
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			if keyMsg.String() == "ctrl+p" {
+				m.LinkList.CursorUp()
+				return m, nil
+			} else if keyMsg.String() == "ctrl+n" {
+				m.LinkList.CursorDown()
+				return m, nil
+			} else if keyMsg.String() == "enter" {
+				if i, ok := m.LinkList.SelectedItem().(linkItem); ok {
+					if m.LinkIntent == IntentAttach {
+						m.Tasks[m.Cursor].URL = i.link.URL
+					} else {
+						m.Tasks = append(m.Tasks, storage.Task{
+							Description: i.link.Title,
+							URL:         i.link.URL,
+							Done:        false,
+						})
+					}
+					m.Store.SaveTasks(m.CurrentDate, m.Tasks)
+				}
+				m.Mode = ModeNav
+				m.LinkList.ResetFilter()
+				return m, nil
+			} else if keyMsg.String() == "esc" && m.LinkList.FilterState() != list.Filtering {
+				m.Mode = ModeNav
+				m.LinkList.ResetFilter()
+				return m, nil
+			}
+		}
+
+		m.LinkList, cmd = m.LinkList.Update(msg)
+		return m, cmd
+	}
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		if m.Mode == ModeNav {
+			return m.handleNav(keyMsg)
+		} else if m.Mode == ModeAddLinkTitle || m.Mode == ModeAddLinkURL {
+			return m.handleAddLinkInput(keyMsg)
+		}
+		return m.handleInput(keyMsg)
 	}
 
 	return m, nil
@@ -130,6 +173,34 @@ func (m Model) handleNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.TextInput.Placeholder = ""
 		m.TextInput.SetValue(m.Workspace)
 		return m, textinput.Blink
+
+	case "a":
+		m.Mode = ModeAddLinkTitle
+		m.LinkInput.Placeholder = ""
+		m.LinkInput.SetValue("")
+		return m, textinput.Blink
+
+	case "s":
+		if len(m.Tasks) > 0 {
+			m.Mode = ModeSearchLinks
+			m.LinkIntent = IntentAttach
+			m.loadLinksIntoList()
+			m.LinkList.ResetFilter()
+			return m, nil
+		}
+
+	case "S":
+		m.Mode = ModeSearchLinks
+		m.LinkIntent = IntentCreate
+		m.loadLinksIntoList()
+		m.LinkList.ResetFilter()
+		return m, nil
+
+	case "v":
+		if len(m.Tasks) > 0 && m.Tasks[m.Cursor].URL != "" {
+			url := m.Tasks[m.Cursor].URL
+			exec.Command("cmd", "/c", "start", "", url).Start()
+		}
 
 	case "[":
 		workspaces := m.Store.ListWorkspaces()
@@ -274,4 +345,50 @@ func parseDuration(s string) (int, bool) {
 		}
 	}
 	return total, true
+}
+
+func (m *Model) loadLinksIntoList() {
+	links, _ := storage.LoadLinks(m.Store.GetWorkspaceDir())
+	items := make([]list.Item, len(links))
+	for i, l := range links {
+		items[i] = linkItem{link: l}
+	}
+	m.LinkList.SetItems(items)
+}
+
+func (m Model) handleAddLinkInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg.String() {
+	case "esc":
+		m.Mode = ModeNav
+		return m, nil
+
+	case "enter":
+		val := m.LinkInput.Value()
+		if val == "" {
+			m.Mode = ModeNav
+			return m, nil
+		}
+
+		if m.Mode == ModeAddLinkTitle {
+			m.NewLinkTitle = val
+			m.Mode = ModeAddLinkURL
+			m.LinkInput.Placeholder = ""
+			m.LinkInput.SetValue("")
+			return m, textinput.Blink
+		} else if m.Mode == ModeAddLinkURL {
+			links, _ := storage.LoadLinks(m.Store.GetWorkspaceDir())
+			links = append(links, storage.Link{
+				Title: m.NewLinkTitle,
+				URL:   val,
+			})
+			storage.SaveLinks(m.Store.GetWorkspaceDir(), links)
+			m.Mode = ModeNav
+			return m, nil
+		}
+	}
+
+	m.LinkInput, cmd = m.LinkInput.Update(msg)
+	return m, cmd
 }
